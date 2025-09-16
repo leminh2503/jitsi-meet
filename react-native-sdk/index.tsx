@@ -14,12 +14,11 @@ import React, {
 import { View, ViewStyle } from 'react-native';
 
 import type { IRoomsInfo } from '../react/features/breakout-rooms/types';
-
-import { appNavigate } from './react/features/app/actions.native';
-import { App } from './react/features/app/components/App.native';
-import { setAudioOnly } from './react/features/base/audio-only/actions';
-import { setAudioMuted, setVideoMuted } from './react/features/base/media/actions';
-import { getRoomsInfo } from './react/features/breakout-rooms/functions';
+import {setAudioMuted, setVideoMuted} from "../react/features/base/media/actions";
+import { getRoomsInfo } from '../react/features/breakout-rooms/functions';
+import {setAudioOnly} from "../react/features/base/audio-only/actions";
+import {appNavigate} from "../react/features/app/actions.native";
+import {App} from "../react/features/app/components/App.native";
 
 
 interface IEventListeners {
