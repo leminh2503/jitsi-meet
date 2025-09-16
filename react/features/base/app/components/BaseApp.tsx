@@ -1,4 +1,3 @@
-// @ts-expect-error
 import { jitsiLocalStorage } from '@jitsi/js-utils';
 import { isEqual } from 'lodash-es';
 import React, { Component, ComponentType, Fragment } from 'react';

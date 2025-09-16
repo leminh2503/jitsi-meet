@@ -100,10 +100,6 @@ const ConferenceNavigationContainer = () => {
     const { t } = useTranslation();
 
     return (
-        <NavigationContainer
-            independent = { true }
-            ref = { conferenceNavigationRef }
-            theme = { navigationContainerTheme as Theme }>
             <ConferenceStack.Navigator
                 screenOptions = {{
                     presentation: 'modal'
@@ -225,7 +221,6 @@ const ConferenceNavigationContainer = () => {
                         title: t('whiteboard.screenTitle')
                     }} />
             </ConferenceStack.Navigator>
-        </NavigationContainer>
     );
 };
 

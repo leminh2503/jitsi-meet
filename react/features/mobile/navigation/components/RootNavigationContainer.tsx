@@ -66,7 +66,6 @@ const RootNavigationContainer = ({ dispatch, isUnsafeRoomWarningAvailable, isWel
 
     return (
         <NavigationContainer
-            independent = { true }
             onReady = { onReady }
             ref = { rootNavigationRef }
             theme = { navigationContainerTheme as Theme }>

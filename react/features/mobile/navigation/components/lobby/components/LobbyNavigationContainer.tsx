@@ -22,12 +22,6 @@ const LobbyNavigationContainer = () => {
         = useSelector((state: IReduxState) => state['features/chat']);
 
     return (
-        <NavigationContainer
-            independent = { true }
-            ref = { lobbyNavigationContainerRef }
-
-            // @ts-ignore
-            theme = { navigationContainerTheme }>
             <LobbyStack.Navigator
                 screenOptions = {{
                     presentation: 'modal'
@@ -44,7 +38,6 @@ const LobbyNavigationContainer = () => {
                         options = { lobbyChatScreenOptions } />
                 }
             </LobbyStack.Navigator>
-        </NavigationContainer>
     );
 
 };

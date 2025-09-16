@@ -7,6 +7,7 @@ import { goBack } from './components/conference/ConferenceNavigationContainerRef
 import { goBack as goBackToLobbyScreen } from './components/lobby/LobbyNavigationContainerRef';
 import { lobbyScreenHeaderCloseButton, screenHeaderCloseButton } from './functions';
 import { goBack as goBackToWelcomeScreen } from './rootNavigationContainerRef';
+import {fonts} from "../../base/ui/Tokens";
 
 
 /**
@@ -32,6 +33,10 @@ export const fullScreenOptions = {
 export const navigationContainerTheme = {
     colors: {
         background: BaseTheme.palette.uiBackground
+    },
+    fonts: {
+        bold: BaseTheme.fonts.bold,
+        medium: BaseTheme.fonts.medium,
     }
 };
 

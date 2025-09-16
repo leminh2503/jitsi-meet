@@ -55,10 +55,6 @@ const SettingsNavigationContainer = ({ isInWelcomePage }: IProps) => {
     , []);
 
     return (
-        <NavigationContainer
-            independent = { true }
-            ref = { settingsNavigationContainerRef }
-            theme = { navigationContainerTheme as Theme }>
             <SettingsStack.Navigator
                 initialRouteName = { screen.settings.main }>
                 <SettingsStack.Screen
@@ -84,7 +80,6 @@ const SettingsNavigationContainer = ({ isInWelcomePage }: IProps) => {
                         title: t('settings.language')
                     }} />
             </SettingsStack.Navigator>
-        </NavigationContainer>
     );
 };
 

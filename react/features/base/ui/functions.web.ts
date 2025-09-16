@@ -4,6 +4,7 @@ import { Theme, adaptV4Theme, createTheme } from '@mui/material/styles';
 import { ITypography, IPalette as Palette1 } from '../ui/types';
 
 import { createColorTokens, createTypographyTokens } from './utils';
+import {fonts} from "./Tokens";
 
 export * from './functions.any';
 
@@ -19,6 +20,7 @@ interface ThemeProps {
     breakpoints: Object;
     colorMap: Object;
     font: Object;
+    fonts: Object;
     shape: Object;
     spacing: Array<number>;
     typography: Object;
@@ -30,7 +32,7 @@ interface ThemeProps {
  * @param {Object} arg - The ui tokens.
  * @returns {Object}
  */
-export function createWebTheme({ font, colorMap, shape, spacing, typography, breakpoints }: ThemeProps) {
+export function createWebTheme({ font, colorMap, shape, spacing, typography, breakpoints, fonts }: ThemeProps) {
     return createTheme(adaptV4Theme({
         spacing,
         palette: createColorTokens(colorMap),
@@ -38,6 +40,7 @@ export function createWebTheme({ font, colorMap, shape, spacing, typography, bre
         typography: {
             // @ts-ignore
             font,
+            fonts,
             ...createTypographyTokens(typography)
         },
         breakpoints

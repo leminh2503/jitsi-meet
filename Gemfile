@@ -12,5 +12,11 @@ gem "mutex_m"
 gem "csv"
 gem "bigdecimal"
 
+# Ruby 3.4.0 has removed some libraries from the standard library.
+gem 'bigdecimal'
+gem 'logger'
+gem 'benchmark'
+gem 'mutex_m'
+
 # (Optional) Bundler itself to ensure consistency
 gem "bundler"

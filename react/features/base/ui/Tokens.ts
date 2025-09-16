@@ -122,6 +122,29 @@ export const font = {
     weightSemiBold: 600
 };
 
+export const fonts = {
+    regular: {
+        fontFamily: 'System',
+        fontWeight: '400' as '400'  // Type assertion cho TypeScript
+    },
+    medium: {
+        fontFamily: 'System',
+        fontWeight: '500' as '500'  // Paper thường dùng 500 cho medium
+    },
+    bold: {
+        fontFamily: 'System',
+        fontWeight: '700' as '700'
+    },
+    light: {
+        fontFamily: 'System',
+        fontWeight: '300' as '300'
+    },
+    thin: {
+        fontFamily: 'System',
+        fontWeight: '100' as '100'
+    }
+};
+
 export const shape = {
     borderRadius: 6,
     circleRadius: 50,
