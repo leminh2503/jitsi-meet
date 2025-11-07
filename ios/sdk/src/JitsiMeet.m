@@ -63,12 +63,17 @@
 
 - (BOOL)fabricEnabled {
     NSLog(@"🔵 fabricEnabled called, returning NO");
-    return YES;
+    return NO;
+}
+
+- (BOOL)newArchEnabled {
+    NSLog(@"🔵 newArchEnabled called, returning NO");
+    return NO;
 }
 
 - (BOOL)turboModuleEnabled {
-    NSLog(@"🔵 turboModuleEnabled called, returning YES");
-    return YES;
+    NSLog(@"🔵 turboModuleEnabled called, returning NO");
+    return NO;
 }
 
 - (BOOL)bridgelessEnabled {
@@ -324,6 +329,10 @@
     
     // Get bridge from the new architecture factory
     return _reactNativeFactory.bridge;
+}
+
+- (RCTReactNativeFactory *)getReactNativeFactory {
+    return _reactNativeFactory;
 }
 
 - (ExternalAPI *)getExternalAPI {

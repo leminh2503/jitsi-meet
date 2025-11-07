@@ -77,7 +77,6 @@
 		DE9A0146289A9A9A00E41CBB /* JitsiAudioSession.m in Sources */ = {isa = PBXBuildFile; fileRef = 4ED4FFF22721B9B90074E620 /* JitsiAudioSession.m */; };
 		DE9A0147289A9A9A00E41CBB /* AppInfo.m in Sources */ = {isa = PBXBuildFile; fileRef = 0BB9AD7C1F60356D001C08DB /* AppInfo.m */; };
 		DE9A0148289A9A9A00E41CBB /* LogBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = DE81A2D72316AC7600AE1940 /* LogBridge.m */; };
-		DE9A0149289A9A9A00E41CBB /* RNRootView.m in Sources */ = {isa = PBXBuildFile; fileRef = DEAFA778229EAD520033A7FA /* RNRootView.m */; };
 		DE9A014A289A9A9A00E41CBB /* JitsiMeetUserInfo.m in Sources */ = {isa = PBXBuildFile; fileRef = DE762DB522AFDE8D000DEBD6 /* JitsiMeetUserInfo.m */; };
 		DE9A014B289A9A9A00E41CBB /* JitsiMeetConferenceOptions.m in Sources */ = {isa = PBXBuildFile; fileRef = DEAD3225220C497000E93636 /* JitsiMeetConferenceOptions.m */; };
 		DE9A014D289A9A9A00E41CBB /* ExternalAPI.m in Sources */ = {isa = PBXBuildFile; fileRef = 0BA13D301EE83FF8007BEF7F /* ExternalAPI.m */; };
@@ -101,7 +100,6 @@
 		DEA9F284258A5D9900D4CD74 /* JitsiMeetSDK.h in Headers */ = {isa = PBXBuildFile; fileRef = DEA9F283258A5D9900D4CD74 /* JitsiMeetSDK.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		DEAD3226220C497000E93636 /* JitsiMeetConferenceOptions.h in Headers */ = {isa = PBXBuildFile; fileRef = DEAD3224220C497000E93636 /* JitsiMeetConferenceOptions.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		DEAD3227220C497000E93636 /* JitsiMeetConferenceOptions.m in Sources */ = {isa = PBXBuildFile; fileRef = DEAD3225220C497000E93636 /* JitsiMeetConferenceOptions.m */; };
-		DEAFA779229EAD520033A7FA /* RNRootView.m in Sources */ = {isa = PBXBuildFile; fileRef = DEAFA778229EAD520033A7FA /* RNRootView.m */; };
 		DEFC743F21B178FA00E4DD96 /* LocaleDetector.m in Sources */ = {isa = PBXBuildFile; fileRef = DEFC743D21B178FA00E4DD96 /* LocaleDetector.m */; };
 		DEFE535421FB1BF800011A3A /* JitsiMeet.m in Sources */ = {isa = PBXBuildFile; fileRef = DEFE535321FB1BF800011A3A /* JitsiMeet.m */; };
 		DEFE535621FB2E8300011A3A /* ReactUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = DEFE535521FB2E8300011A3A /* ReactUtils.m */; };
@@ -169,8 +167,6 @@
 		DEAD3224220C497000E93636 /* JitsiMeetConferenceOptions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = JitsiMeetConferenceOptions.h; sourceTree = "<group>"; };
 		DEAD3225220C497000E93636 /* JitsiMeetConferenceOptions.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = JitsiMeetConferenceOptions.m; sourceTree = "<group>"; };
 		DEAD3228220C734300E93636 /* JitsiMeetConferenceOptions+Private.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "JitsiMeetConferenceOptions+Private.h"; sourceTree = "<group>"; };
-		DEAFA777229EAD3B0033A7FA /* RNRootView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RNRootView.h; sourceTree = "<group>"; };
-		DEAFA778229EAD520033A7FA /* RNRootView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RNRootView.m; sourceTree = "<group>"; };
 		DEFC743D21B178FA00E4DD96 /* LocaleDetector.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = LocaleDetector.m; sourceTree = "<group>"; };
 		DEFE535321FB1BF800011A3A /* JitsiMeet.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = JitsiMeet.m; sourceTree = "<group>"; };
 		DEFE535521FB2E8300011A3A /* ReactUtils.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ReactUtils.m; sourceTree = "<group>"; };
@@ -265,8 +261,6 @@
 				0B412F171EDEC65D00B1A0A6 /* JitsiMeetView.m */,
 				DE81A2D72316AC7600AE1940 /* LogBridge.m */,
 				DE65AAC92317FFCD00290BEC /* LogUtils.h */,
-				DEAFA777229EAD3B0033A7FA /* RNRootView.h */,
-				DEAFA778229EAD520033A7FA /* RNRootView.m */,
 				0B412F1B1EDEC80100B1A0A6 /* JitsiMeetViewDelegate.h */,
 				DEFC743D21B178FA00E4DD96 /* LocaleDetector.m */,
 				C6A3426B204F127900E062DD /* picture-in-picture */,
@@ -648,7 +642,6 @@
 				4E812F3928F9A4ED0087ACC9 /* JitsiMeetView+Private.m in Sources */,
 				0BB9AD7D1F60356D001C08DB /* AppInfo.m in Sources */,
 				DE81A2D92316AC7600AE1940 /* LogBridge.m in Sources */,
-				DEAFA779229EAD520033A7FA /* RNRootView.m in Sources */,
 				DE762DB622AFDE8D000DEBD6 /* JitsiMeetUserInfo.m in Sources */,
 				DEAD3227220C497000E93636 /* JitsiMeetConferenceOptions.m in Sources */,
 				0BA13D311EE83FF8007BEF7F /* ExternalAPI.m in Sources */,
@@ -679,7 +672,6 @@
 				4E0EF63C28CA4069005D1B03 /* JMCallKitProxy.m in Sources */,
 				DE9A0147289A9A9A00E41CBB /* AppInfo.m in Sources */,
 				DE9A0148289A9A9A00E41CBB /* LogBridge.m in Sources */,
-				DE9A0149289A9A9A00E41CBB /* RNRootView.m in Sources */,
 				DE9A014A289A9A9A00E41CBB /* JitsiMeetUserInfo.m in Sources */,
 				DE9A014B289A9A9A00E41CBB /* JitsiMeetConferenceOptions.m in Sources */,
 				DE9A014D289A9A9A00E41CBB /* ExternalAPI.m in Sources */,
