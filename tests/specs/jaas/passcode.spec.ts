@@ -1,10 +1,10 @@
 import { setTestProperties } from '../../helpers/TestProperties';
+import { joinJaasMuc, generateJaasToken as t } from '../../helpers/jaas';
 import { IToken } from '../../helpers/token';
-import { joinMuc, generateJaasToken as t } from '../helpers/jaas';
 
 setTestProperties(__filename, {
+    requireWebhookProxy: true,
     useJaas: true,
-    useWebhookProxy: true,
     usesBrowsers: [ 'p1', 'p2' ]
 });
 
@@ -31,7 +31,7 @@ describe('Setting passcode through settings provisioning', () => {
  */
 async function joinWithPassword(instanceId: string, token: IToken) {
     // @ts-ignore
-    const p = await joinMuc(instanceId, token, ctx.roomName);
+    const p = await joinJaasMuc({ name: instanceId, token }, { roomName: ctx.roomName });
 
     await p.waitForMucJoinedOrError();
     expect(await p.isInMuc()).toBe(false);

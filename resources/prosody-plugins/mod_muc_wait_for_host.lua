@@ -62,9 +62,11 @@ module:hook('muc-occupant-pre-join', function (event)
     end
 
     if not room.has_host then
-        if session.auth_token or (session.username and jid.host(occupant.bare_jid) == muc_domain_base) then
+        if module:fire_event('room_has_host', { room = room; occupant = occupant; session = session; }) then
             -- the host is here, let's drop the lobby
             room:set_members_only(false);
+            -- this is set by create-persistent-lobby-room, so let's clear it
+            room:set_persistent(false);
 
             -- let's set the default role of 'participant' for the newly created occupant as it was nil when created
             -- when the room was still members_only, later if not disabled this participant will become a moderator
@@ -88,6 +90,14 @@ module:hook('muc-occupant-pre-join', function (event)
                 skip_display_name_check = true;
             });
         end
+    end
+end);
+
+module:hook('room_has_host', function(event)
+    local room, occupant, session = event.room, event.occupant, event.session;
+    if session.auth_token
+        or (session.username and jid.host(occupant.bare_jid) == muc_domain_base) then
+        return true;
     end
 end);
 

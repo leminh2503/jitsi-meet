@@ -27,7 +27,6 @@ import Toolbar from '../pageobjects/Toolbar';
 import VideoQualityDialog from '../pageobjects/VideoQualityDialog';
 import Visitors from '../pageobjects/Visitors';
 
-import { config as testsConfig } from './TestsConfig';
 import { LOG_PREFIX, logInfo } from './browserLogger';
 import { IToken } from './token';
 import { IParticipantJoinOptions, IParticipantOptions } from './types';
@@ -59,6 +58,12 @@ export class Participant {
     private _dialInPin?: string;
 
     private _iFrameApi: boolean = false;
+
+    /**
+     * Whether the current frame is the main frame. This could coincide with the Jitsi Meet frame (when it's loaded
+     * directly), or not (when it's loaded in an iframe).
+     */
+    private _inMainFrame: boolean = true;
 
     /**
      * The default config to use when joining.
@@ -150,9 +155,17 @@ export class Participant {
      */
     async getEndpointId(): Promise<string> {
         if (!this._endpointId) {
+            const wasInMainFrame = this._inMainFrame;
+
+            await this.switchToIFrame();
+
             this._endpointId = await this.execute(() => { // eslint-disable-line arrow-body-style
                 return APP?.conference?.getMyUserId();
             });
+
+            if (wasInMainFrame) {
+                await this.switchToMainFrame();
+            }
         }
 
         return this._endpointId;
@@ -178,8 +191,8 @@ export class Participant {
      * @param {string} message - The message to log.
      * @returns {void}
      */
-    log(message: string): void {
-        logInfo(this.driver, message);
+    async log(message: string): Promise<void> {
+        await logInfo(this.driver, message);
     }
 
     /**
@@ -219,8 +232,8 @@ export class Participant {
             // @ts-ignore
             url = `${this.driver.iframePageBase}${url}&domain="${baseUrl.host}"&room="${options.roomName}"`;
 
-            if (testsConfig.iframe.tenant) {
-                url = `${url}&tenant="${testsConfig.iframe.tenant}"`;
+            if (options.tenant) {
+                url = `${url}&tenant="${options.tenant}"`;
             } else if (baseUrl.pathname.length > 1) {
                 // remove leading slash
                 url = `${url}&tenant="${baseUrl.pathname.substring(1)}"`;
@@ -235,8 +248,9 @@ export class Participant {
         // drop the leading '/' so we can use the tenant if any
         url = url.startsWith('/') ? url.substring(1) : url;
 
-        if (options.forceTenant) {
-            url = `/${options.forceTenant}/${url}`;
+        if (options.tenant && !this._iFrameApi) {
+            // For the iFrame API the tenant is passed in a different way.
+            url = `/${options.tenant}/${url}`;
         }
 
         await this.driver.url(url);
@@ -244,9 +258,7 @@ export class Participant {
         await this.waitForPageToLoad();
 
         if (this._iFrameApi) {
-            const mainFrame = this.driver.$('iframe');
-
-            await this.driver.switchFrame(mainFrame);
+            await this.switchToIFrame();
         }
 
         if (!options.skipWaitToJoin) {
@@ -319,7 +331,7 @@ export class Participant {
     /**
      * Waits for the tile view to display.
      */
-    async waitForTileViewDisplay(reverse = false) {
+    async waitForTileViewDisplayed(reverse = false) {
         await this.driver.$('//div[@id="videoconference_page" and contains(@class, "tile-view")]').waitForDisplayed({
             reverse,
             timeout: 10_000,
@@ -626,19 +638,33 @@ export class Participant {
 
 
     /**
-     * Switches to the iframe API context
+     * Switches to the main frame context (outside the iFrame; where the Jitsi Meet iFrame API is available).
+     *
+     * If this Participant was initialized with iFrameApi=false this is a no-op.
      */
-    async switchToAPI() {
+    async switchToMainFrame() {
+        if (!this._iFrameApi || this._inMainFrame) {
+            return;
+        }
+
         await this.driver.switchFrame(null);
+        this._inMainFrame = true;
     }
 
     /**
-     * Switches to the meeting page context.
+     * Switches to the iFrame context (inside the iFrame; where the Jitsi Meet application runs).
+     *
+     * If this Participant was initialized with iFrameApi=false this is a no-op.
      */
-    switchInPage() {
-        const mainFrame = this.driver.$('iframe');
+    async switchToIFrame() {
+        if (!this._iFrameApi || !this._inMainFrame) {
+            return;
+        }
 
-        return this.driver.switchFrame(mainFrame);
+        const iframe = this.driver.$('iframe');
+
+        await this.driver.switchFrame(iframe);
+        this._inMainFrame = false;
     }
 
     /**
@@ -652,32 +678,34 @@ export class Participant {
      * Hangups the participant by leaving the page. base.html is an empty page on all deployments.
      */
     async hangup() {
-        const current = await this.driver.getUrl();
+        console.log(`Hanging up (${this.name})`);
+        if ((await this.driver.getUrl()).endsWith('/base.html')) {
+            console.log(`Already hung up (${this.name})`);
 
-        // already hangup
-        if (current.endsWith('/base.html')) {
             return;
         }
 
-        // do a hangup, to make sure unavailable presence is sent
-        await this.execute(() => typeof APP !== 'undefined' && APP.conference?.hangup());
+        // @ts-ignore
+        await this.execute(() => window.APP?.conference?.hangup());
 
-        // let's give it some time to leave the muc, we redirect after hangup so we should wait for the
-        // change of url
+        // Wait until _room is unset, which is one of the last things hangup() does.
         await this.driver.waitUntil(
             async () => {
-                const u = await this.driver.getUrl();
-
-                // trying to debug some failures of reporting not leaving, where we see the close page in screenshot
-                console.log(`initialUrl: ${current} currentUrl: ${u}`);
-
-                return current !== u;
+                try {
+                    // @ts-ignore
+                    return await this.driver.execute(() => window.APP?.conference?._room === undefined);
+                } catch (e) {
+                    // There seems to be a race condition with hangup() causing the page to change, and execute()
+                    // might fail with a Bidi error. Retry.
+                    return false;
+                }
             },
             {
                 timeout: 8000,
-                timeoutMsg: `${this.name} did not leave the muc in 8s initialUrl: ${current}`
+                timeoutMsg: `${this.name} failed to hang up`
             }
         );
+        console.log(`Hung up (${this.name})`);
 
         await this.driver.url('/base.html')
 
@@ -897,6 +925,26 @@ export class Participant {
      */
     async isRemoteVideoReceivedAndDisplayed(endpointId: string): Promise<boolean> {
         return await this.isRemoteVideoReceived(endpointId) && await this.isRemoteVideoDisplayed(endpointId);
+    }
+
+    /**
+     * Waits for a specific participant to be displayed on large video.
+     *
+     * @param {string} expectedEndpointId - The endpoint ID of the participant expected on large video.
+     * @param {string} timeoutMsg - Optional custom timeout message.
+     * @param {number} timeout - Optional timeout in milliseconds (default: 30000).
+     * @returns {Promise<void>}
+     */
+    async waitForParticipantOnLargeVideo(
+            expectedEndpointId: string,
+            timeoutMsg?: string,
+            timeout: number = 30_000): Promise<void> {
+        await this.driver.waitUntil(
+            async () => await this.getLargeVideo().getResource() === expectedEndpointId,
+            {
+                timeout,
+                timeoutMsg: timeoutMsg || `Expected ${expectedEndpointId} on large video for ${this.name}`
+            });
     }
 
     /**

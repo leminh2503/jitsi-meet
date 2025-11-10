@@ -9,7 +9,7 @@ import pretty from 'pretty';
 import { getTestProperties, loadTestFiles } from './helpers/TestProperties';
 import { config as testsConfig } from './helpers/TestsConfig';
 import WebhookProxy from './helpers/WebhookProxy';
-import { getLogs, initLogger, logInfo } from './helpers/browserLogger';
+import { getLogs, initLogger, logInfo, saveLogs } from './helpers/browserLogger';
 import { IContext } from './helpers/types';
 import { generateRoomName } from './helpers/utils';
 
@@ -162,6 +162,18 @@ export const config: WebdriverIO.MultiremoteConfig = {
         webdriver: 'info'
     },
 
+    // Can be used to debug chromedriver, depends on chromedriver and wdio-chromedriver-service
+    // services: [
+    //     [ 'chromedriver', {
+    //         // Pass the --verbose flag to Chromedriver
+    //         args: [ '--verbose' ],
+    //         // Optionally, define a file to store the logs instead of stdout
+    //         logFileName: 'wdio-chromedriver.log',
+    //         // Optionally, define a directory for the log file
+    //         outputDir: 'test-results',
+    //     } ]
+    // ],
+
     // Set directory to store all logs into
     outputDir: TEST_RESULTS_DIR,
 
@@ -212,8 +224,7 @@ export const config: WebdriverIO.MultiremoteConfig = {
         globalAny.ctx.testProperties = testProperties;
 
         if (testProperties.useJaas && !testsConfig.jaas.enabled) {
-            console.warn(`JaaS is not configured, skipping ${testName}.`);
-            globalAny.ctx.skipSuiteTests = true;
+            globalAny.ctx.skipSuiteTests = 'JaaS is not configured';
 
             return;
         }
@@ -242,11 +253,18 @@ export const config: WebdriverIO.MultiremoteConfig = {
         globalAny.ctx.roomName = generateRoomName(testName);
         console.log(`Using room name: ${globalAny.ctx.roomName}`);
 
-        // If we are running the iFrameApi tests, we need to mark it as such and if needed to create the proxy
-        // and connect to it.
         if (testProperties.useWebhookProxy && testsConfig.webhooksProxy.enabled && !globalAny.ctx.webhooksProxy) {
-            // Note this prevents iframe and jaas test from running together.
-            const tenant = testsConfig.jaas.enabled ? testsConfig.jaas.tenant : testsConfig.iframe.tenant;
+            const tenant = testsConfig.jaas.tenant;
+
+            if (!testProperties.useJaas) {
+                throw new Error('The test tries to use WebhookProxy without JaaS.');
+            }
+            if (!tenant) {
+                console.log(`Can not configure WebhookProxy, missing tenant in config. Skipping ${testName}.`);
+                globalAny.ctx.skipSuiteTests = 'WebHookProxy is required but not configured (missing tenant)';
+
+                return;
+            }
 
             globalAny.ctx.webhooksProxy = new WebhookProxy(
                 `${testsConfig.webhooksProxy.url}?tenant=${tenant}&room=${globalAny.ctx.roomName}`,
@@ -255,9 +273,8 @@ export const config: WebdriverIO.MultiremoteConfig = {
             globalAny.ctx.webhooksProxy.connect();
         }
 
-        if (testProperties.useWebhookProxy && !globalAny.ctx.webhooksProxy) {
-            console.warn(`WebhookProxy is not available, skipping ${testName}`);
-            globalAny.ctx.skipSuiteTests = true;
+        if (testProperties.requireWebhookProxy && !globalAny.ctx.webhooksProxy) {
+            throw new Error('The test requires WebhookProxy, but it is not available.');
         }
     },
 
@@ -305,7 +322,31 @@ export const config: WebdriverIO.MultiremoteConfig = {
      * @param {Object} context - The context object.
      */
     beforeTest(test, context) {
+        // Use the directory under 'tests/specs' as the parent suite
+        const dirMatch = test.file.match(/.*\/tests\/specs\/([^\/]+)\//);
+        const dir = dirMatch ? dirMatch[1] : false;
+        const fileMatch = test.file.match(/.*\/tests\/specs\/(.*)/);
+        const file = fileMatch ? fileMatch[1] : false;
+
+        if (ctx.testProperties.description) {
+            AllureReporter.addDescription(ctx.testProperties.description, 'text');
+        }
+
+        if (file) {
+            AllureReporter.addLink(`https://github.com/jitsi/jitsi-meet/blob/master/tests/specs/${file}`, 'Code');
+        }
+
+        if (dir) {
+            AllureReporter.addParentSuite(dir);
+        }
+
         if (ctx.skipSuiteTests) {
+            if ((typeof ctx.skipSuiteTests) === 'string') {
+                AllureReporter.addDescription((ctx.testProperties.description || '')
+                    + '\n\nSkipped because: ' + ctx.skipSuiteTests, 'text');
+            }
+            console.log(`Skipping because: ${ctx.skipSuiteTests}`);
+
             context.skip();
 
             return;
@@ -329,6 +370,16 @@ export const config: WebdriverIO.MultiremoteConfig = {
             logInfo(multiremotebrowser.getInstance(instance), `---=== End test ${test.title} ===---`));
 
         if (error) {
+
+            // skip all remaining tests in the suite
+            ctx.skipSuiteTests = `Test "${test.title}" has failed.`;
+
+            // make sure all browsers are at the main app in iframe (if used), so we collect debug info
+            await Promise.all(multiremotebrowser.instances.map(async (instance: string) => {
+                // @ts-ignore
+                await ctx[instance]?.switchToIFrame();
+            }));
+
             const allProcessing: Promise<any>[] = [];
 
             multiremotebrowser.instances.forEach((instance: string) => {
@@ -350,7 +401,14 @@ export const config: WebdriverIO.MultiremoteConfig = {
                             'text/plain'))
                     .catch(e => console.error('Failed grabbing debug logs', e)));
 
-                AllureReporter.addAttachment(`console-logs-${instance}`, getLogs(bInstance) || '', 'text/plain');
+                allProcessing.push(
+                    bInstance.execute(() => window.APP?.debugLogs?.logs?.join('\n')).then(res => {
+                        if (res) {
+                            saveLogs(bInstance, res);
+                        }
+
+                        AllureReporter.addAttachment(`console-logs-${instance}`, getLogs(bInstance) || '', 'text/plain');
+                    }));
 
                 allProcessing.push(bInstance.getPageSource().then(source => {
                     AllureReporter.addAttachment(`html-source-${instance}`, pretty(source), 'text/plain');

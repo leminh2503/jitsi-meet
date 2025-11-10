@@ -1,9 +1,9 @@
 import { setTestProperties } from '../../../helpers/TestProperties';
-import { joinMuc, generateJaasToken as t } from '../../helpers/jaas';
+import { joinJaasMuc, generateJaasToken as t } from '../../../helpers/jaas';
 
 setTestProperties(__filename, {
+    requireWebhookProxy: true,
     useJaas: true,
-    useWebhookProxy: true,
     usesBrowsers: [ 'p1', 'p2', 'p3', 'p4' ]
 });
 
@@ -23,21 +23,20 @@ describe('Visitor receiving video from a single remote participant', () => {
                 enabled: false
             }
         };
-        const sender = await joinMuc(
-            'p1',
-            t({ room: ctx.roomName, displayName: 'Sender', moderator: true }), {
-                configOverwrite
-            }
-        );
+        const sender = await joinJaasMuc({
+            token: t({ room: ctx.roomName, displayName: 'Sender', moderator: true })
+        }, {
+            configOverwrite
+        });
         const senderEndpointId = await sender.getEndpointId();
 
         const testVisitor = async function(instanceId: 'p1' | 'p2' | 'p3' | 'p4') {
-            const visitor = await joinMuc(
-                instanceId,
-                t({ room: ctx.roomName, displayName: 'Visitor', visitor: true }), {
-                    configOverwrite
-                }
-            );
+            const visitor = await joinJaasMuc({
+                name: instanceId,
+                token: t({ room: ctx.roomName, displayName: 'Visitor', visitor: true })
+            }, {
+                configOverwrite
+            });
 
             await visitor.waitForIceConnected();
 

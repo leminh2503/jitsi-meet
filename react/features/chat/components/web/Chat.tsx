@@ -6,7 +6,7 @@ import { makeStyles } from 'tss-react/mui';
 import { IReduxState } from '../../../app/types';
 import { translate } from '../../../base/i18n/functions';
 import { IconInfo, IconMessage, IconShareDoc, IconSubtitles } from '../../../base/icons/svg';
-import { getLocalParticipant, getRemoteParticipants } from '../../../base/participants/functions';
+import { getLocalParticipant, getRemoteParticipants, isPrivateChatEnabledSelf } from '../../../base/participants/functions';
 import Select from '../../../base/ui/components/web/Select';
 import Tabs from '../../../base/ui/components/web/Tabs';
 import { arePollsDisabled } from '../../../conference/functions.any';
@@ -24,7 +24,7 @@ import {
     toggleChat
 } from '../../actions.web';
 import { CHAT_SIZE, ChatTabs, OPTION_GROUPCHAT, SMALL_WIDTH_THRESHOLD } from '../../constants';
-import { getChatMaxSize } from '../../functions';
+import { getChatMaxSize, getFocusedTab, isChatDisabled } from '../../functions';
 import { IChatProps as AbstractProps } from '../../types';
 
 import ChatHeader from './ChatHeader';
@@ -41,12 +41,17 @@ interface IProps extends AbstractProps {
     /**
      * The currently focused tab.
      */
-    _focusedTab: ChatTabs;
+    _focusedTab?: ChatTabs;
 
     /**
      * True if the CC tab is enabled and false otherwise.
      */
     _isCCTabEnabled: boolean;
+
+    /**
+     * True if chat is disabled.
+     */
+    _isChatDisabled: boolean;
 
     /**
      * True if file sharing tab is enabled.
@@ -74,40 +79,19 @@ interface IProps extends AbstractProps {
     _isResizing: boolean;
 
     /**
-     * Number of unread poll messages.
-     */
-    _nbUnreadPolls: number;
-
-    /**
-     * Function to send a text message.
-     *
-     * @protected
-     */
-    _onSendMessage: Function;
-
-    /**
-     * Function to toggle the chat window.
-     */
-    _onToggleChat: Function;
-
-    /**
-     * Function to display the chat tab.
-     *
-     * @protected
-     */
-    _onToggleChatTab: Function;
-
-    /**
-     * Function to display the polls tab.
-     *
-     * @protected
-     */
-    _onTogglePollsTab: Function;
-
-    /**
      * Whether or not to block chat access with a nickname input form.
      */
     _showNamePrompt: boolean;
+
+    /**
+     * Number of unread file sharing messages.
+     */
+    _unreadFilesCount: number;
+
+    /**
+     * Number of unread poll messages.
+     */
+    _unreadPollsCount: number;
 
     /**
      * The current width of the chat panel.
@@ -238,21 +222,24 @@ const Chat = ({
     _isOpen,
     _isPollsEnabled,
     _isCCTabEnabled,
+    _isChatDisabled,
     _isFileSharingTabEnabled,
     _focusedTab,
     _isResizing,
     _messages,
-    _nbUnreadMessages,
-    _nbUnreadPolls,
-    _onSendMessage,
-    _onToggleChat,
-    _onToggleChatTab,
-    _onTogglePollsTab,
+    _unreadMessagesCount,
+    _unreadPollsCount,
+    _unreadFilesCount,
     _showNamePrompt,
     _width,
     dispatch,
     t
 }: IProps) => {
+    // If no tabs are available, don't render the chat panel at all.
+    if (_isChatDisabled && !_isPollsEnabled && !_isCCTabEnabled && !_isFileSharingTabEnabled) {
+        return null;
+    }
+
     const { classes, cx } = useStyles({ _isResizing, width: _width });
     const [ isMouseDown, setIsMouseDown ] = useState(false);
     const [ mousePosition, setMousePosition ] = useState<number | null>(null);
@@ -266,6 +253,7 @@ const Chat = ({
     } = useSelector((state: IReduxState) => state['features/base/config']);
     const privateMessageRecipient = useSelector((state: IReduxState) => state['features/chat'].privateMessageRecipient);
     const participants = useSelector(getRemoteParticipants);
+    const isPrivateChatAllowed = useSelector((state: IReduxState) => isPrivateChatEnabledSelf(state));
 
     const options = useMemo(() => {
         const o = Array.from(participants?.values() || [])
@@ -439,7 +427,7 @@ const Chat = ({
         return (
             <>
                 {renderTabs()}
-                <div
+                {!_isChatDisabled && (<div
                     aria-labelledby = { ChatTabs.CHAT }
                     className = { cx(
                         classes.chatPanel,
@@ -455,15 +443,17 @@ const Chat = ({
                     <MessageContainer
                         messages = { _messages } />
                     <MessageRecipient />
-                    <Select
-                        containerClassName = { cx(classes.privateMessageRecipientsList) }
-                        id = 'select-chat-recipient'
-                        onChange = { onSelectedRecipientChange }
-                        options = { options }
-                        value = { privateMessageRecipient?.id || OPTION_GROUPCHAT } />
+                    {isPrivateChatAllowed && (
+                        <Select
+                            containerClassName = { cx(classes.privateMessageRecipientsList) }
+                            id = 'select-chat-recipient'
+                            onChange = { onSelectedRecipientChange }
+                            options = { options }
+                            value = { privateMessageRecipient?.id || OPTION_GROUPCHAT } />
+                    )}
                     <ChatInput
                         onSend = { onSendMessage } />
-                </div>
+                </div>) }
                 { _isPollsEnabled && (
                     <>
                         <div
@@ -505,22 +495,32 @@ const Chat = ({
      * @returns {ReactElement}
      */
     function renderTabs() {
-        let tabs = [
-            {
+        // The only way focused tab will be undefined is when no tab is enabled. Therefore this function won't be
+        // executed because Chat component won't render anything. This should never happen but adding the check
+        // here to make TS happy (when passing the _focusedTab in the selected prop for Tabs).
+        if (!_focusedTab) {
+            return null;
+        }
+
+        let tabs = [];
+
+        // Only add chat tab if chat is not disabled.
+        if (!_isChatDisabled) {
+            tabs.push({
                 accessibilityLabel: t('chat.tabs.chat'),
                 countBadge:
-                    _focusedTab !== ChatTabs.CHAT && _nbUnreadMessages > 0 ? _nbUnreadMessages : undefined,
+                    _focusedTab !== ChatTabs.CHAT && _unreadMessagesCount > 0 ? _unreadMessagesCount : undefined,
                 id: ChatTabs.CHAT,
                 controlsId: `${ChatTabs.CHAT}-panel`,
                 icon: IconMessage,
                 title: t('chat.tabs.chat')
-            }
-        ];
+            });
+        }
 
         if (_isPollsEnabled) {
             tabs.push({
                 accessibilityLabel: t('chat.tabs.polls'),
-                countBadge: _focusedTab !== ChatTabs.POLLS && _nbUnreadPolls > 0 ? _nbUnreadPolls : undefined,
+                countBadge: _focusedTab !== ChatTabs.POLLS && _unreadPollsCount > 0 ? _unreadPollsCount : undefined,
                 id: ChatTabs.POLLS,
                 controlsId: `${ChatTabs.POLLS}-panel`,
                 icon: IconInfo,
@@ -542,7 +542,7 @@ const Chat = ({
         if (_isFileSharingTabEnabled) {
             tabs.push({
                 accessibilityLabel: t('chat.tabs.fileSharing'),
-                countBadge: undefined,
+                countBadge: _focusedTab !== ChatTabs.FILE_SHARING && _unreadFilesCount > 0 ? _unreadFilesCount : undefined,
                 id: ChatTabs.FILE_SHARING,
                 controlsId: `${ChatTabs.FILE_SHARING}-panel`,
                 icon: IconShareDoc,
@@ -585,6 +585,8 @@ const Chat = ({
             {_showNamePrompt
                 ? <DisplayNameForm
                     isCCTabEnabled = { _isCCTabEnabled }
+                    isChatDisabled = { _isChatDisabled }
+                    isFileSharingEnabled = { _isFileSharingTabEnabled }
                     isPollsEnabled = { _isPollsEnabled } />
                 : renderChat()}
             <div
@@ -614,16 +616,17 @@ const Chat = ({
  *     _isCCTabEnabled: boolean,
  *     _focusedTab: string,
  *     _messages: Array<Object>,
- *     _nbUnreadMessages: number,
- *     _nbUnreadPolls: number,
+ *     _unreadMessagesCount: number,
+ *     _unreadPollsCount: number,
+ *     _unreadFilesCount: number,
  *     _showNamePrompt: boolean,
  *     _width: number,
  *     _isResizing: boolean
  * }}
  */
 function _mapStateToProps(state: IReduxState, _ownProps: any) {
-    const { isOpen, focusedTab, messages, nbUnreadMessages, width, isResizing } = state['features/chat'];
-    const { nbUnreadPolls } = state['features/polls'];
+    const { isOpen, messages, unreadMessagesCount, unreadFilesCount, width, isResizing } = state['features/chat'];
+    const { unreadPollsCount } = state['features/polls'];
     const _localParticipant = getLocalParticipant(state);
 
     return {
@@ -631,11 +634,13 @@ function _mapStateToProps(state: IReduxState, _ownProps: any) {
         _isOpen: isOpen,
         _isPollsEnabled: !arePollsDisabled(state),
         _isCCTabEnabled: isCCTabEnabled(state),
+        _isChatDisabled: isChatDisabled(state),
         _isFileSharingTabEnabled: isFileSharingEnabled(state),
-        _focusedTab: focusedTab,
+        _focusedTab: getFocusedTab(state),
         _messages: messages,
-        _nbUnreadMessages: nbUnreadMessages,
-        _nbUnreadPolls: nbUnreadPolls,
+        _unreadMessagesCount: unreadMessagesCount,
+        _unreadPollsCount: unreadPollsCount,
+        _unreadFilesCount: unreadFilesCount,
         _showNamePrompt: !_localParticipant?.name,
         _width: width?.current || CHAT_SIZE,
         _isResizing: isResizing

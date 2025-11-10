@@ -96,6 +96,11 @@ function normalizeCurrentLanguage(language: string) {
         return;
     }
 
+    // First check if the language code exists as-is (e.g., 'zh-CN', 'fr-CA')
+    if (LANGUAGES.includes(language)) {
+        return language;
+    }
+
     const [ country, lang ] = language.split('-');
     const jitsiNormalized = `${country}${lang ?? ''}`;
 
@@ -151,12 +156,11 @@ export function getModeratorTabProps(stateful: IStateful) {
     const state = toState(stateful);
     const {
         conference,
-        followMeEnabled,
-        followMeRecorderEnabled,
         startAudioMutedPolicy,
         startVideoMutedPolicy,
         startReactionsMuted
     } = state['features/base/conference'];
+    const { followMeEnabled, followMeRecorderEnabled } = state['features/follow-me'];
     const { groupChatWithPermissions } = state['features/chat'];
     const { disableReactionsModeration } = state['features/base/config'];
     const followMeActive = isFollowMeActive(state);
